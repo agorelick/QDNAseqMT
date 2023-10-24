@@ -1,7 +1,7 @@
 #########################################################################/**
 # @RdocFunction binReadCounts
 #
-# @title "Calculate binned read counts from a set of BAM files"
+# @title "Calculate binned read counts from a set of BAM files (retaining MT/chrM reads)"
 #
 # @synopsis
 #
@@ -93,6 +93,7 @@
 # @keyword IO
 # @keyword file
 #*/#########################################################################
+
 binReadCounts <- function(bins, bamfiles=NULL, path=NULL, ext='bam',
     bamnames=NULL, phenofile=NULL, chunkSize=NULL,
     cache=getOption("QDNAseq::cache", FALSE), force=!cache,
@@ -109,6 +110,7 @@ binReadCounts <- function(bins, bamfiles=NULL, path=NULL, ext='bam',
 
     oopts <- options("QDNAseq::verbose"=verbose)
     on.exit(options(oopts))
+
 
     if (is.null(bamfiles))
         bamfiles <- list.files(ifelse(is.null(path), '.', path),
@@ -227,6 +229,8 @@ binReadCounts <- function(bins, bamfiles=NULL, path=NULL, ext='bam',
     countsPerTarget <- future_lapply(names(targets), FUN=function(seqName) {
         readCounts <- integer(length=nrow(bins))
         seqNameI <- sub('chr', '', seqName)
+        seqNameI <- sub('M', 'MT', seqNameI)
+
         for (chunk in 1:ceiling(targets[seqName] / chunkSize)) {
             chunkStart <- (chunk - 1) * chunkSize + 1
             chunkEnd <- chunk * chunkSize + 1
@@ -363,6 +367,7 @@ binReadCounts <- function(bins, bamfiles=NULL, path=NULL, ext='bam',
             hits[[chr]] <- reads[['pos']][keep]
         }
         names(hits) <- sub('^chr', '', names(hits))
+        names(hits) <- sub('^M', 'MT', names(hits))
         rm(list=c('reads'))
         gc(FALSE)
 
